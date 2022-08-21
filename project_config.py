@@ -18,9 +18,9 @@ path_voc = f"{dir_root}/voc.npz"
 path_bow = f"{dir_root}/bow.npz"
 
 # Parameters
-n_kmeans  = 50
-n_classes = 15
-n_KNN     = 5
+n_kmeans  = 50  # choose between 50-100
+n_classes = 15  # must be 15 for our dataset
+n_KNN     = 9   # choose odd numbers, check between 3-15
 
 dict_class_names = {
     0: 'Bedroom',

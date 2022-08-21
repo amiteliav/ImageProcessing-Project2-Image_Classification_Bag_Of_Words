@@ -63,7 +63,7 @@ def convert_class_labels(label_results):
     return results
 
 
-def ClassifyImg(PathToImg):
+def ClassifyImg(PathToImg, create_txt=True):
     """
     input: PathToImg: a folder path holding the test images, no subfolders
 
@@ -92,7 +92,6 @@ def ClassifyImg(PathToImg):
 
     # --- SIFT -------
     sift = cv.SIFT_create()
-
     for file in sorted(files):
         if file.endswith(".jpg") or file.endswith(".jpeg"):  # run only over images
             file_path = f"{PathToImg}/{file}"
@@ -141,7 +140,6 @@ def ClassifyImg(PathToImg):
     # -----------------------------------
 
 
-
     label_results = []
 
     # predict with kmeans over the class-test dataset
@@ -157,23 +155,70 @@ def ClassifyImg(PathToImg):
     print(f"Finish predicting labels")
 
 
-
     # Convert int-labels to str-labels
-    results = convert_class_labels(label_results)
-    with open(f"{project_config.dir_root}/results.txt", "w") as file:
-        for item in results:
-            file.write("%s\n" % item)
-        file.close()
-    print(f"results.txt is ready")
+    if create_txt is True:
+        results = convert_class_labels(label_results)
+        with open(f"{project_config.dir_root}/results.txt", "w") as file:
+            for item in results:
+                file.write("%s\n" % item)
+            file.close()
+        print(f"results.txt is ready")
 
 
+    return label_results
+
+def classifier_test_all():
+    """
+    this code test my model over the whole test dataset
+    :return: prints the accuracy
+    """
+    tot_samples = 0
+    tot_correct = 0
+    for cls in range(project_config.n_classes):
+        str_label            = project_config.dict_class_names[cls]
+        path_classifier_test = f"{project_config.dir_data_test}/{str_label}"
+
+        PathToImg = path_classifier_test
+        results   = ClassifyImg(PathToImg, create_txt = False)
+
+        cls_n_samples = len(results)
+        cls_correct   = results.count(cls)
+
+        tot_samples+=cls_n_samples
+        tot_correct+=cls_correct
+
+        # Print per-class results
+        print(f"----------- Results class: {cls} ---------")
+        print(f"results: {cls_correct}/{cls_n_samples}")
+        print(f"acc (between 0-1): {(cls_correct / cls_n_samples):.4f}")
+        print("-----------------------------")
+    # ---------
+
+    print("======================================================")
+
+    # total result over all the classes
+    print(f"----------- Final results over all the classes ---------")
+    print(f"results: {tot_correct}/{tot_samples}")
+    print(f"acc (between 0-1): {(tot_correct / tot_samples):.4f}")
+    print("-----------------------------")
 
 
 
 
 if __name__ == "__main__":
-    path_classifier_test = f"{project_config.dir_data}/classifier_test"
+    """
+    :param 'path_classifier_test': path to the test dataset folder
+        
+    """
+    # #  --- Classifier for submission ---
+    # path_classifier_test = f"{project_config.dir_data}/classifier_test"
+    #
+    # PathToImg = path_classifier_test
+    # _ = ClassifyImg(PathToImg)
+    # # ----------------------------------
 
-    PathToImg = path_classifier_test
-    ClassifyImg(PathToImg)
+
+    # --- Testing my model over all the Test dataset ---
+    classifier_test_all()
+    # -------------------------
 

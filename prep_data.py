@@ -34,6 +34,7 @@ def run_SIFT_example():
 
 
 def create_train_des():
+    print(f"start create_train_des()")
     root, folders, _ = next(os.walk(project_config.dir_data_train))
 
     # Define a SIFT object to calc des'
@@ -66,6 +67,7 @@ def create_train_des():
 
 
 def create_test_des():
+    print("start create_test_des()")
     root, folders, _ = next(os.walk(project_config.dir_data_test))
 
     # Define a SIFT object to calc des'
@@ -139,6 +141,7 @@ def des2hist(des_pred):
 
 
 def create_voc_bow(use_subset_factor = 1000):
+    print("start create_voc_bow()")
     all_des = load_all_des(mode="train")
 
     data2Kmeans = all_des
@@ -205,9 +208,10 @@ def create_voc_bow(use_subset_factor = 1000):
         i += 1  # i is for classes / folders
         #  -- end of all classes
 
-    # save bow
+    # -- save bow --
     np.savez(project_config.path_bow, bow=bow)
     print(f"bow saved! in path: {project_config.path_bow}")
+    # ------------
 
 
 
@@ -220,7 +224,7 @@ def PrepareData():
     # create voc
     flag_calc_voc       = True
     use_subset_factor   = None    # len of subset to fit the kmeans, or 'None' for full dataset,
-    # =====================
+    # ===========================================
 
 
     # ----- Calc' the SIFT des' for train and test datasets ---
@@ -231,10 +235,11 @@ def PrepareData():
         create_test_des()
     # ------------------------------------------------
 
-    # Create 'voc':
+
+    # --- Create 'voc' ----:
     if flag_calc_voc is True:
         create_voc_bow(use_subset_factor=use_subset_factor)
-
+    # ---------------------
 
 if __name__ == "__main__":
     # Run this method to create VOC and BOW, use the flag-params above to control the run

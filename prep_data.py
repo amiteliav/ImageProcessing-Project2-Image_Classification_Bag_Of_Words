@@ -3,6 +3,8 @@ import cv2 as cv
 import os
 from sklearn.cluster import KMeans
 
+import pickle
+
 # Imports from my project
 import project_config
 
@@ -28,8 +30,6 @@ def run_SIFT_example():
 
 
 
-
-# def run_kmeans_example():
 
 
 
@@ -124,29 +124,36 @@ def load_all_des(mode="train"):
     return all_des
 
 
-def create_voc_bow(use_subset = 1000):
+
+def des2hist(des_pred):
+    """
+    :param des_pred: result from kmeans over the SIFT descriptors
+    :return: bow as a histogram from the kmeans results
+    """
+    hist_bins = list(range(0, project_config.n_kmeans + 1))
+    hist = np.histogram(des_pred, bins=hist_bins)
+    hist_sum = np.sum(hist[0])
+    hist = hist[0] / hist_sum
+
+    return hist
+
+
+def create_voc_bow(use_subset_factor = 1000):
     all_des = load_all_des(mode="train")
 
     data2Kmeans = all_des
-    if use_subset is not None:
+    if use_subset_factor is not None:
         # Run over a subset of the data
         n_data     = all_des.shape[0]
-        len_subset = int(min(n_data, n_data/use_subset))
+        len_subset = int(min(n_data, n_data//use_subset_factor))
         index = np.random.choice(n_data, len_subset, replace=False)
         data2Kmeans = all_des[index,:]
         print(f"{data2Kmeans.shape=}")
 
     # Define Kmeans object, and run it
-    n_kmeans = project_config.n_kmeans
-    kmeans   = KMeans(n_clusters=n_kmeans)
-
-    # fit kmeans over the full/subset data
-    kmeans.fit(data2Kmeans)
-
-    # # Calc the kmeans prediction over the full dataset
-    # all_des_pred = kmeans.predict(all_des)
-    # print(f"{all_des_pred.shape=}")
-
+    kmeans   = KMeans(n_clusters=project_config.n_kmeans,
+                      init='k-means++', n_init=10, max_iter=300, tol=0.0001, verbose=0,
+                      random_state=None, copy_x=True, algorithm='lloyd')
     """ NOTE:
     Keamns object:
     param 'kmeans' holds alot of info about the clustering
@@ -154,12 +161,25 @@ def create_voc_bow(use_subset = 1000):
         2. kmeans.labels_           : holds the label in the range of [0,n_kmeans-1]
                                       for each of example in the data -> shape: (data len)
     """
+
+    # fit kmeans over the full(/subset) data
+    kmeans.fit(data2Kmeans)
+
+    # Save Kmeans model for later use
+    kmeans_model_path = f"{project_config.dir_root}/kmeans_model.pkl"
+    pickle.dump(kmeans, open(kmeans_model_path, 'wb'))
+    print(f"Kmeans model saved! in path: {kmeans_model_path}")
+    # -------------------------
+
+
     # ------ Save VOC ------
     # voc is [n_kmeans, 128], where 128 is the length of each des' from SIFT
     # later, using 'voc' we can create the bow for each img, and create it's histogram
     voc = kmeans.cluster_centers_
-    np.savez(f"{project_config.dir_root}/voc.npz", voc=voc)
+    np.savez(project_config.path_voc, voc=voc)
+    print(f"voc saved! in path: {project_config.path_voc}")
     # =================
+
 
     # Calc bow for each image in the train dataset
     bow = np.zeros((project_config.n_classes, project_config.n_kmeans, 100))  # 100 images for each class
@@ -178,10 +198,7 @@ def create_voc_bow(use_subset = 1000):
             des_pred = kmeans.predict(des)
 
             # Create histogram for the img des'
-            hist_bins = list(range(0,project_config.n_kmeans+1))
-            hist = np.histogram(des_pred, bins=hist_bins)
-            hist_sum = np.sum(hist[0])
-            hist = hist[0]/hist_sum
+            hist = des2hist(des_pred)  # create histogram from kmeans predictions over the SIFT des'
             bow[i,:,j] = hist
             j+=1  # j is for files
             # -- end of all file
@@ -189,7 +206,8 @@ def create_voc_bow(use_subset = 1000):
         #  -- end of all classes
 
     # save bow
-    np.savez(f"{project_config.dir_root}/bow.npz", bow=bow)
+    np.savez(project_config.path_bow, bow=bow)
+    print(f"bow saved! in path: {project_config.path_bow}")
 
 
 
@@ -201,11 +219,11 @@ def PrepareData():
 
     # create voc
     flag_calc_voc       = True
-    use_subset          = None    # len of subset to fit the kmeans, or 'None' for full dataset,
+    use_subset_factor   = None    # len of subset to fit the kmeans, or 'None' for full dataset,
     # =====================
 
 
-    # ----- Calc' the SIFT des for train and test datasets ---
+    # ----- Calc' the SIFT des' for train and test datasets ---
     if flag_calc_train_des is True:
         create_train_des()
 
@@ -215,10 +233,9 @@ def PrepareData():
 
     # Create 'voc':
     if flag_calc_voc is True:
-        create_voc_bow(use_subset=use_subset)
+        create_voc_bow(use_subset_factor=use_subset_factor)
 
 
 if __name__ == "__main__":
-   # run_SIFT_example()
-
-   PrepareData()
+    # Run this method to create VOC and BOW, use the flag-params above to control the run
+    PrepareData()

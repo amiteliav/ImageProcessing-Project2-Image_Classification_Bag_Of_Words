@@ -4,7 +4,7 @@ import os
 
 # Path to project directory
 all_paths = []
-dir_root = f"C:/Users/amite/Google Drive/BIU/1_Electrical_eng/5_Master/1st_year/2_ImageProcessing/HW/project2/git"
+dir_root       = f"."  # define the root folder for the project
 dir_data       = f"{dir_root}/data"
 dir_data_train = f"{dir_data}/train"
 dir_data_test  = f"{dir_data}/test"
@@ -18,9 +18,10 @@ path_voc = f"{dir_root}/voc.npz"
 path_bow = f"{dir_root}/bow.npz"
 
 # Parameters
-n_kmeans  = 50  # choose between 50-100
-n_classes = 15  # must be 15 for our dataset
-n_KNN     = 9   # choose odd numbers, check between 3-15
+sift_nfeatures = None # None or int number(like 200)  # in sift algorithm, return the best N keypoint. default=None
+n_kmeans       = 50   # choose between 50-100
+n_classes      = 15   # must be 15 for our dataset
+n_KNN          = 9    # choose odd numbers, check between 3-15
 
 dict_class_names = {
     0: 'Bedroom',

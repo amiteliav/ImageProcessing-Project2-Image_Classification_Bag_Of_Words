@@ -1,6 +1,8 @@
 import numpy as np
 import cv2 as cv
 import os
+import time
+
 from sklearn.cluster import KMeans
 
 import pickle
@@ -20,7 +22,7 @@ def run_SIFT_example():
     img = cv.imread(path)
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-    sift = cv.SIFT_create()
+    sift = cv.SIFT_create(nfeatures=project_config.sift_nfeatures)
 
     # see: http://amroamroamro.github.io/mexopencv/matlab/cv.SIFT.detectAndCompute.html
     kp, des = sift.detectAndCompute(gray, None)
@@ -30,15 +32,12 @@ def run_SIFT_example():
 
 
 
-
-
-
 def create_train_des():
     print(f"start create_train_des()")
     root, folders, _ = next(os.walk(project_config.dir_data_train))
 
     # Define a SIFT object to calc des'
-    sift = cv.SIFT_create()
+    sift = cv.SIFT_create(nfeatures=project_config.sift_nfeatures)
 
     # Create SIFT des folder for the train data
     if not os.path.exists(project_config.dir_sift_train):
@@ -66,12 +65,13 @@ def create_train_des():
                 np.savez(save_path, des=des)
 
 
+
 def create_test_des():
     print("start create_test_des()")
     root, folders, _ = next(os.walk(project_config.dir_data_test))
 
     # Define a SIFT object to calc des'
-    sift = cv.SIFT_create()
+    sift = cv.SIFT_create(nfeatures=project_config.sift_nfeatures)
 
     # Create SIFT des folder for the data
     if not os.path.exists(project_config.dir_sift_test):
@@ -97,6 +97,7 @@ def create_test_des():
                 file_name = file.split(".")[0]  # if file is "XX.jpg" or "XX.jpeg" get only XX
                 save_path = f"{project_config.dir_sift_test}/{folder}/{file_name}.npz"
                 np.savez(save_path, des=des)
+
 
 
 def load_all_des(mode="train"):
@@ -140,6 +141,7 @@ def des2hist(des_pred):
     return hist
 
 
+
 def create_voc_bow(use_subset_factor = 1000):
     print("start create_voc_bow()")
     all_des = load_all_des(mode="train")
@@ -151,7 +153,7 @@ def create_voc_bow(use_subset_factor = 1000):
         len_subset = int(min(n_data, n_data//use_subset_factor))
         index = np.random.choice(n_data, len_subset, replace=False)
         data2Kmeans = all_des[index,:]
-        print(f"{data2Kmeans.shape=}")
+    print(f"{data2Kmeans.shape=}")
 
     # Define Kmeans object, and run it
     kmeans   = KMeans(n_clusters=project_config.n_kmeans,
@@ -166,7 +168,10 @@ def create_voc_bow(use_subset_factor = 1000):
     """
 
     # fit kmeans over the full(/subset) data
+    start = time.time()
     kmeans.fit(data2Kmeans)
+    end = time.time()
+    print(f"Kmeans fit took {int(end-start)}[sec]")
 
     # Save Kmeans model for later use
     kmeans_model_path = f"{project_config.dir_root}/kmeans_model.pkl"
@@ -215,18 +220,20 @@ def create_voc_bow(use_subset_factor = 1000):
 
 
 
-def PrepareData():
+def prep_data():
     # ----- Set flags according to pre-calc or not -----
     # Sift des'
-    flag_calc_train_des = False
+    flag_calc_train_des = True
     flag_calc_test_des  = False
 
     # create voc
     flag_calc_voc       = True
     use_subset_factor   = None    # len of subset to fit the kmeans, or 'None' for full dataset,
+    # ============= END flags ======================
+
+
+
     # ===========================================
-
-
     # ----- Calc' the SIFT des' for train and test datasets ---
     if flag_calc_train_des is True:
         create_train_des()
@@ -235,12 +242,16 @@ def PrepareData():
         create_test_des()
     # ------------------------------------------------
 
-
     # --- Create 'voc' ----:
     if flag_calc_voc is True:
         create_voc_bow(use_subset_factor=use_subset_factor)
     # ---------------------
 
+    # ===========================================
+
+
+
 if __name__ == "__main__":
     # Run this method to create VOC and BOW, use the flag-params above to control the run
-    PrepareData()
+    prep_data()
+

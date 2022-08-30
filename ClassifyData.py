@@ -4,12 +4,13 @@ import os
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KNeighborsClassifier
 
+from sys import argv
 
 import pickle
 
 # Imports from my project
 import project_config
-from prep_data import des2hist
+from PrepareData import des2hist
 
 
 def pred_label_from_des_pred(des_pred):
@@ -76,7 +77,7 @@ def ClassifyImg(PathToImg, create_txt=True):
         5. convert int labels to string class-names
 
     NOTES!:
-        1. I assume prep_data.py and PrepareData() already run
+        1. I assume PrepareData.py and PrepareData() already run
             which created the subfolders, kmeans model.
     """
 
@@ -91,7 +92,7 @@ def ClassifyImg(PathToImg, create_txt=True):
 
 
     # --- SIFT -------
-    sift = cv.SIFT_create()
+    sift = cv.SIFT_create(nfeatures=project_config.sift_nfeatures)
     for file in sorted(files):
         if file.endswith(".jpg") or file.endswith(".jpeg"):  # run only over images
             file_path = f"{PathToImg}/{file}"
@@ -125,6 +126,7 @@ def ClassifyImg(PathToImg, create_txt=True):
        """
     with np.load(project_config.path_bow) as data:
         bow = data['bow']
+    print(f"{bow.shape=}")
 
     n_classes, voc_len, n_samples = bow.shape
     bow_to_knn = np.swapaxes(bow, 1, 2)
@@ -197,7 +199,7 @@ def classifier_test_all():
     print("======================================================")
 
     # total result over all the classes
-    print(f"----------- Final results over all the classes ---------")
+    print(f"----------- Final results over all the classes , KNN={project_config.n_KNN}---------")
     print(f"results: {tot_correct}/{tot_samples}")
     print(f"acc (between 0-1): {(tot_correct / tot_samples):.4f}")
     print("-----------------------------")
@@ -206,19 +208,25 @@ def classifier_test_all():
 
 
 if __name__ == "__main__":
+    """   
+    if running from command line - argv will hold the test images folder path.   
+    if running from pycharm, fill the path to the files below!
+    
+    NOTE: there is another function you can run "classifier_test_all" that test all the data in 'test' folder
     """
-    :param 'path_classifier_test': path to the test dataset folder
-        
-    """
-    # #  --- Classifier for submission ---
-    # path_classifier_test = f"{project_config.dir_data}/classifier_test"
-    #
-    # PathToImg = path_classifier_test
-    # _ = ClassifyImg(PathToImg)
-    # # ----------------------------------
+    # If running from CMD, argv will hold the path to the files
+    cmd_line = argv
+    if len(cmd_line) >= 2:
+        folder_path = argv[1]
+    else:  # running from pycharm - FILL PATH TO FILES!!
+        folder_path = f"{project_config.dir_data}/classifier_test"  # This is a test folder I created myself
+
+    #  --- Classifier for submission ---
+    print(f"running Classifier over path: {folder_path}")
+    _ = ClassifyImg(folder_path)
+    # ----------------------------------
 
 
-    # --- Testing my model over all the Test dataset ---
-    classifier_test_all()
-    # -------------------------
-
+    # # --- Testing my model over all the Test dataset folder ---
+    # classifier_test_all()
+    # # -------------------------
